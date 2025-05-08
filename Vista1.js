@@ -62,7 +62,7 @@ const Vista1 = ({ navigation }) => {
             <View key={index} style={styles.card}>
               <Text style={styles.cardTitle}>{prefix}</Text>
               <Text style={styles.cardText}>Compra: {displayValue}</Text>
-              <Text style={styles.result}>Monto en BS: {result}</Text>
+              <Text style={styles.result}>Monto Bolivares: {result}</Text>
             </View>
           );
         })
