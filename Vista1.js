@@ -45,7 +45,7 @@ const Vista1 = ({ navigation }) => {
 
           // Calcula el monto final
           let result;
-          let displayValue = dolar.promedio;
+          let displayValue = parseFloat(dolar.promedio).toFixed(2);
 
           if (index === 1 && data.length > 2) {
             // Calcula el promedio entre BCV (index 0) y Paralelo (index 2)
@@ -61,8 +61,8 @@ const Vista1 = ({ navigation }) => {
           return (
             <View key={index} style={styles.card}>
               <Text style={styles.cardTitle}>{prefix}</Text>
-              <Text style={styles.cardText}>Compra: {displayValue}</Text>
-              <Text style={styles.result}>Monto Bolivares: {result}</Text>
+              <Text style={styles.cardText}>Tasa: {displayValue}</Text>
+              <Text style={styles.result}>Bs S.: {result}</Text>
             </View>
           );
         })
@@ -79,7 +79,7 @@ const Vista1 = ({ navigation }) => {
 
       {/* Botón para navegar a Vista 2 */}
       <Button
-        title="Ir a Vista 2"
+        title="BS a USD"
         onPress={() => {
           if (navigation && navigation.navigate) {
             navigation.navigate('Vista2');
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#',
     color: 'white',
     padding: 10,
     borderRadius: 4,
@@ -122,8 +122,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#1e1e1e',
     borderRadius: 8,
-    padding: 20,
-    marginBottom: 20,
+    padding: 15,
+    marginBottom: 15,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
@@ -134,19 +134,24 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 25,
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   cardText: {
-    fontSize: 16,
+    fontSize: 20,
     color: 'white',
     marginBottom: 5,
   },
   result: {
-    fontSize: 16,
-    color: '#4caf50',
+    fontSize: 20, // Aumenta el tamaño de la fuente
+    color: '#83fb24', // Cambia a un color dorado para resaltar
     marginTop: 10,
+    fontWeight: 'bold', // Negrita para mayor énfasis
+    backgroundColor: '#333', // Fondo oscuro para contraste
+    padding: 10, // Espaciado interno
+    borderRadius: 8, // Bordes redondeados
+    textAlign: 'center', // Centra el texto
   },
 });
 

@@ -51,11 +51,13 @@ const Vista2 = ({ navigation }) => {
             result = 'N/A';
           }
 
+          const tasaConDosDecimales = parseFloat(dolar.promedio).toFixed(2);
+
           return (
             <View key={index} style={styles.card}>
               <Text style={styles.cardTitle}>{prefix}</Text>
-              <Text style={styles.cardText}>Compra: {dolar.promedio}</Text>
-              <Text style={styles.result}>Monto en USD: {result}</Text>
+              <Text style={styles.cardText}>Tasa: {tasaConDosDecimales}</Text>
+              <Text style={styles.result}>M. USD: {result}</Text>
             </View>
           );
         })
@@ -72,7 +74,7 @@ const Vista2 = ({ navigation }) => {
 
       {/* Botón para navegar a Vista 1 */}
       <Button
-        title="Ir a Vista 1"
+        title="USD a BS"
         onPress={() => {
           if (navigation && navigation.navigate) {
             navigation.navigate('Vista1');
@@ -104,7 +106,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#',
     color: 'white',
     padding: 10,
     borderRadius: 4,
@@ -115,8 +117,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#1e1e1e',
     borderRadius: 8,
-    padding: 20,
-    marginBottom: 20,
+    padding: 15,
+    marginBottom: 15,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
@@ -127,20 +129,26 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 25,
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   cardText: {
-    fontSize: 16,
+    fontSize: 20,
     color: 'white',
     marginBottom: 5,
   },
   result: {
-    fontSize: 16,
-    color: '#4caf50',
+    fontSize: 20, // Aumenta el tamaño de la fuente
+    color: '#83fb24', // Cambia a un color dorado para resaltar
     marginTop: 10,
+    fontWeight: 'bold', // Negrita para mayor énfasis
+    backgroundColor: '#333', // Fondo oscuro para contraste
+    padding: 10, // Espaciado interno
+    borderRadius: 8, // Bordes redondeados
+    textAlign: 'center', // Centra el texto
   },
 });
+
 
 export default Vista2;
