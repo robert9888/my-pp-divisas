@@ -1,9 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Button } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Button, TouchableOpacity, Clipboard, Image } from 'react-native';
+import Voice from '@react-native-voice/voice';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
+
 
 const Vista1 = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [amount, setAmount] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [infoVisibility, setInfoVisibility] = useState({});
+
+  useEffect(() => {
+    // Configura los eventos de Voice
+    Voice.onSpeechResults = onSpeechResults;
+    Voice.onSpeechError = onSpeechError;
+
+    return () => {
+      // Limpia los eventos al desmontar el componente
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const onSpeechResults = (event) => {
+    if (event.value && event.value.length > 0) {
+      const spokenText = event.value[0];
+      const parsedAmount = parseFloat(spokenText);
+      if (!isNaN(parsedAmount)) {
+        setAmount(parsedAmount);
+      }
+    }
+    setIsListening(false);
+  };
+
+  const onSpeechError = (error) => {
+    console.error('Error de reconocimiento de voz:', error);
+    setIsListening(false);
+  };
+
+  const startListening = async () => {
+    try {
+      setIsListening(true);
+      await Voice.start('es-ES'); // Configura el idioma (español)
+    } catch (error) {
+      console.error('Error al iniciar el reconocimiento de voz:', error);
+      setIsListening(false);
+    }
+  };
 
   useEffect(() => {
     // Realiza una solicitud a la API para obtener datos sobre el dólar
@@ -13,24 +57,54 @@ const Vista1 = ({ navigation }) => {
       .catch(error => console.error('Error al obtener los datos:', error));
   }, []);
 
+  const copyToClipboard = (text) => {
+    Clipboard.setString(text);
+  };
+
+  const calculateDifferences = (bcvValue, customAverage, result) => {
+    return {
+      diffBCVPromedio: (bcvValue - customAverage).toFixed(2),
+      diffBCVParalelo: (bcvValue - result).toFixed(2),
+    };
+  };
+
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Input para ingresar el monto */}
       <View style={styles.inputContainer}>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={require('./assets/conversor2.png')}
+            style={styles.inputImage}
+          />
+        </View>
         <Text style={styles.label}>Ingrese un monto:</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Monto en USD"
-          placeholderTextColor="#888"
-          onChangeText={(value) => setAmount(parseFloat(value) || 0)}
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Monto en USD"
+            placeholderTextColor="#888"
+            value={amount > 0 ? amount.toString() : ''}
+            onChangeText={(value) => setAmount(parseFloat(value) || 0)}
+          />
+          <TouchableOpacity onPress={startListening} disabled={isListening}>
+            <Icon
+              name="mic"
+              size={24}
+              color={isListening ? '#FF0000' : '#e2e6e9'}
+              style={styles.micIcon}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tarjetas con los datos */}
+
       {data.length > 0 ? (
+           
+
         data.map((dolar, index) => {
-          // Determina el texto adicional basado en el índice
           let prefix = '';
           if (index === 0) {
             prefix = 'BCV';
@@ -40,30 +114,103 @@ const Vista1 = ({ navigation }) => {
             prefix = 'Paralelo';
           }
 
-          // Formatea la fecha para mostrar solo la parte de la fecha (YYYY-MM-DD)
+          
           const formattedDate = dolar.fechaActualizacion?.split('T')[0] || 'Fecha no disponible';
+    let result = (amount * parseFloat(dolar.promedio)).toFixed(2);
+    let displayValue = parseFloat(dolar.promedio).toFixed(2);
 
-          // Calcula el monto final
-          let result;
-          let displayValue = parseFloat(dolar.promedio).toFixed(2);
-
-          if (index === 1 && data.length > 2) {
-            // Calcula el promedio entre BCV (index 0) y Paralelo (index 2)
-            const bcvValue = parseFloat(data[0].promedio);
-            const paraleloValue = parseFloat(data[2].promedio);
-            const customAverage = ((bcvValue + paraleloValue) / 2).toFixed(2);
-            displayValue = customAverage; // Actualiza el valor mostrado en "Promedio"
-            result = (amount * parseFloat(customAverage)).toFixed(2);
-          } else {
-            result = (amount * parseFloat(dolar.promedio)).toFixed(2);
-          }
+  // Calcula el promedio personalizado si es la tarjeta "Promedio"
+  if (index === 1 && data.length > 2) {
+    const bcvValue = parseFloat(data[0].promedio);
+    const paraleloValue = parseFloat(data[2].promedio);
+    customAverage = ((bcvValue + paraleloValue) / 2).toFixed(2); // Calcula el promedio entre BCV y Paralelo
+    displayValue = customAverage;
+    result = (amount * parseFloat(customAverage)).toFixed(2); // Calcula el monto basado en el promedio
+  }
 
           return (
             <View key={index} style={styles.card}>
-              <Text style={styles.cardTitle}>{prefix}</Text>
-              <Text style={styles.cardText}>Tasa: {displayValue}</Text>
-              <Text style={styles.result}>Bs S.: {result}</Text>
+            <Text style={styles.cardTitle}>{prefix} - Tasa: {displayValue}</Text>
+            <View style={styles.resultWrapper}>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={() => {
+                  setInfoVisibility((prev) => ({
+                    ...prev,
+                    [index]: !prev[index], // Alterna la visibilidad de la tarjeta seleccionada
+                  }));
+                }}
+              >
+                <Icon name="compare" size={20} color="white" />
+              </TouchableOpacity>
+              <Text style={styles.result}>Bs S: {result}</Text>
+              <TouchableOpacity
+                style={styles.copyButton}
+                onPress={() => copyToClipboard(result)}
+              >
+                <Icon name="content-copy" size={20} color="white" />
+              </TouchableOpacity>
             </View>
+      
+            {/* Información adicional bajo la tarjeta seleccionada */}
+            {infoVisibility[index] && (
+              <View style={styles.additionalInfo}>
+                {data.length > 2 ? (
+                  <>
+                    <Text style={styles.infoTitle}>Diferencia</Text>
+      
+                    {/* Diferencias específicas para cada tarjeta */}
+                    {index === 0 && (
+                      <>
+                        <Text style={styles.infoText}>
+                          Promedio: {(
+                            parseFloat(amount * parseFloat(data[0].promedio)) - parseFloat(amount * parseFloat(customAverage))
+                          ).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          Paralelo: {(
+                            parseFloat(amount * parseFloat(data[0].promedio)) - parseFloat(amount * parseFloat(data[2].promedio))
+                          ).toFixed(2)}
+                        </Text>
+                      </>
+                    )}
+      
+                    {index === 1 && (
+                      <>
+                        <Text style={styles.infoText}>
+                          BCV: {(
+                            parseFloat(amount * parseFloat(customAverage)) - parseFloat(amount * parseFloat(data[0].promedio))
+                          ).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          Paralelo: {(
+                            parseFloat(amount * parseFloat(customAverage)) - parseFloat(amount * parseFloat(data[2].promedio))
+                          ).toFixed(2)}
+                        </Text>
+                      </>
+                    )}
+      
+                    {index === 2 && (
+                      <>
+                        <Text style={styles.infoText}>
+                          BCV: {(
+                            parseFloat(amount * parseFloat(data[2].promedio)) - parseFloat(amount * parseFloat(data[0].promedio))
+                          ).toFixed(2)}
+                        </Text>
+                        <Text style={styles.infoText}>
+                          Promedio: {(
+                            parseFloat(amount * parseFloat(data[2].promedio)) - parseFloat(amount * parseFloat(customAverage))
+                          ).toFixed(2)}
+                        </Text>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.infoText}>No hay suficientes datos para calcular diferencias.</Text>
+                )}
+              </View>
+            )}
+          </View>
           );
         })
       ) : (
@@ -78,16 +225,19 @@ const Vista1 = ({ navigation }) => {
       )}
 
       {/* Botón para navegar a Vista 2 */}
-      <Button
-        title="BS a USD"
-        onPress={() => {
-          if (navigation && navigation.navigate) {
-            navigation.navigate('Vista2');
-          } else {
-            console.error('El objeto navigation no está disponible.');
-          }
-        }}
-      />
+      <TouchableOpacity
+  style={styles.customButton}
+  onPress={() => {
+    if (navigation && navigation.navigate) {
+      navigation.navigate('Vista2');
+    } else {
+      console.error('El objeto navigation no está disponible.');
+    }
+  }}
+>
+  <Text style={styles.customButtonText}>BS a USD</Text>
+</TouchableOpacity>
+
     </ScrollView>
   );
 };
@@ -97,33 +247,44 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: '#121212',
     alignItems: 'center',
-    justifyContent: 'center', // Centra verticalmente
+    justifyContent: 'center',
     padding: 20,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
     width: '100%',
     maxWidth: 400,
   },
   label: {
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 5,
     fontSize: 16,
   },
-  input: {
-    backgroundColor: '#',
-    color: 'white',
-    padding: 10,
+  inputWrapper: {
+    flexDirection: 'row', // Alinea el input y el botón en la misma línea
+    alignItems: 'center',
+    backgroundColor: '#1e1e1e',
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#333',
-    fontSize: 16,
+    paddingHorizontal: 10, // Espaciado interno horizontal
   },
+  input: {
+    flex: 1, // Ocupa el espacio restante
+    color: 'white',
+    paddingVertical: 10, // Espaciado interno vertical
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  micIcon: {
+    marginLeft: 10, // Espaciado entre el input y el ícono
+  },
+  
   card: {
     backgroundColor: '#1e1e1e',
     borderRadius: 8,
-    padding: 15,
-    marginBottom: 15,
+    padding: 5,
+    marginBottom: 10,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
@@ -134,25 +295,81 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardTitle: {
-    fontSize: 25,
+    fontSize: 23,
     color: 'white',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   cardText: {
-    fontSize: 20,
+    fontSize: 18,
     color: 'white',
-    marginBottom: 5,
+    marginBottom: 2,
+  },
+
+  customButton: {
+    backgroundColor: '#3498db', // Color de fondo del botón
+    padding: 10,
+    borderRadius: 50,
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  customButtonText: {
+    color: 'white', // Color del texto
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  resultWrapper: {
+    flexDirection: 'row', // Alinea los elementos en una fila
+    alignItems: 'center', // Centra verticalmente los elementos
+    justifyContent: 'space-between', // Espaciado entre los elementos
+    width: '100%', // Asegura que ocupe todo el ancho disponible
+    marginTop: 8,
   },
   result: {
-    fontSize: 20, // Aumenta el tamaño de la fuente
-    color: '#83fb24', // Cambia a un color dorado para resaltar
-    marginTop: 10,
-    fontWeight: 'bold', // Negrita para mayor énfasis
-    backgroundColor: '#333', // Fondo oscuro para contraste
-    padding: 10, // Espaciado interno
-    borderRadius: 8, // Bordes redondeados
-    textAlign: 'center', // Centra el texto
+    fontSize: 20,
+    color: '#83fb24',
+    fontWeight: 'bold',
+    backgroundColor: '#333',
+    padding: 8,
+    borderRadius: 6,
+    textAlign: 'center',
+    flex: 1, // Permite que el texto ocupe el espacio restante
   },
+  copyButton: {
+    marginHorizontal: 10, // Espaciado entre los botones y el texto
+    padding: 5,
+    backgroundColor: '#333',
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+      imageWrapper: {
+        alignItems: 'center', // Centra la imagen horizontalmente
+        justifyContent: 'center', // Centra la imagen verticalmente
+        width: '100%', // Asegura que ocupe todo el ancho del contenedor
+      },
+      inputImage: {
+        width: 200, // Ajusta el ancho de la imagen
+        height: 100, // Ajusta el alto de la imagen
+        resizeMode: 'contain', // Ajusta la imagen dentro del contenedor
+      },
+      additionalInfo: {
+        marginTop: 10,
+        backgroundColor: '#1e1e1e',
+        padding: 10,
+        borderRadius: 6,
+      },
+      infoText: {
+        color: 'white',
+        fontSize: 16,
+        marginBottom: 5,
+      },
+infoTitle: {
+color: 'white',
+fontSize: 18,
+fontWeight: 'bold',
+marginBottom: 10, // Espaciado debajo del título
+textAlign: 'center', // Centra el texto
+},
 });
 
 export default Vista1;
