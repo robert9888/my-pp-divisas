@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, Button } from 'react-native';
 
-const Vista1 = ({ navigation }) => {
+const Vista2 = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [amount, setAmount] = useState(0);
 
@@ -17,11 +17,11 @@ const Vista1 = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Input para ingresar el monto */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Ingrese un monto:</Text>
+        <Text style={styles.label}>Ingrese un monto en Bolívares:</Text>
         <TextInput
           style={styles.input}
           keyboardType="numeric"
-          placeholder="Monto en USD"
+          placeholder="Monto en Bolívares"
           placeholderTextColor="#888"
           onChangeText={(value) => setAmount(parseFloat(value) || 0)}
         />
@@ -29,9 +29,8 @@ const Vista1 = ({ navigation }) => {
 
       {/* Tarjetas con los datos */}
       {data.length > 0 ? (
-           
-
         data.map((dolar, index) => {
+          // Determina el texto adicional basado en el índice
           let prefix = '';
           if (index === 0) {
             prefix = 'BCV';
@@ -44,26 +43,21 @@ const Vista1 = ({ navigation }) => {
           // Formatea la fecha para mostrar solo la parte de la fecha (YYYY-MM-DD)
           const formattedDate = dolar.fechaActualizacion?.split('T')[0] || 'Fecha no disponible';
 
-          // Calcula el monto final
+          // Calcula el monto dividido
           let result;
-          let displayValue = dolar.promedio;
-
-          if (index === 1 && data.length > 2) {
-            // Calcula el promedio entre BCV (index 0) y Paralelo (index 2)
-            const bcvValue = parseFloat(data[0].promedio);
-            const paraleloValue = parseFloat(data[2].promedio);
-            const customAverage = ((bcvValue + paraleloValue) / 2).toFixed(2);
-            displayValue = customAverage; // Actualiza el valor mostrado en "Promedio"
-            result = (amount * parseFloat(customAverage)).toFixed(2);
+          if (dolar.promedio && amount > 0) {
+            result = (amount / parseFloat(dolar.promedio)).toFixed(2);
           } else {
-            result = (amount * parseFloat(dolar.promedio)).toFixed(2);
+            result = '0.00';
           }
+
+          const tasaConDosDecimales = parseFloat(dolar.promedio).toFixed(2);
 
           return (
             <View key={index} style={styles.card}>
               <Text style={styles.cardTitle}>{prefix}</Text>
-              <Text style={styles.cardText}>Compra: {displayValue}</Text>
-              <Text style={styles.result}>Monto Bolivares: {result}</Text>
+              <Text style={styles.cardText}>Tasa: {tasaConDosDecimales}</Text>
+              <Text style={styles.result}>M. USD: {result}</Text>
             </View>
           );
         })
@@ -78,71 +72,53 @@ const Vista1 = ({ navigation }) => {
         </Text>
       )}
 
-      {/* Botón para navegar a Vista 2 */}
+      {/* Botón para navegar a Vista 1 */}
       <Button
-        title="Ir a Vista 2"
+        title="USD a BS"
         onPress={() => {
           if (navigation && navigation.navigate) {
-            navigation.navigate('Vista2');
+            navigation.navigate('Vista1');
           } else {
             console.error('El objeto navigation no está disponible.');
           }
         }}
       />
     </ScrollView>
-    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1e1e1e',
-    padding: 10,
-  },
-  headerTitle: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  settingsButton: {
-    padding: 5,
-  },
   container: {
     flexGrow: 1,
     backgroundColor: '#121212',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center', // Centra verticalmente
     padding: 20,
   },
   inputContainer: {
-    marginBottom: 10,
+    marginBottom: 20,
     width: '100%',
     maxWidth: 400,
   },
   label: {
     color: 'white',
-    marginBottom: 5,
+    marginBottom: 10,
     fontSize: 16,
   },
   input: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#',
+    color: 'white',
+    padding: 10,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#333',
     fontSize: 16,
   },
-  micIcon: {
-    marginLeft: 10, // Espaciado entre el input y el ícono
-  },
-  
   card: {
     backgroundColor: '#1e1e1e',
     borderRadius: 8,
-    padding: 5,
-    marginBottom: 10,
+    padding: 15,
+    marginBottom: 15,
     width: '100%',
     maxWidth: 400,
     alignItems: 'center',
@@ -153,25 +129,26 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   cardTitle: {
-    fontSize: 23,
+    fontSize: 25,
     color: 'white',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   cardText: {
-    fontSize: 18,
-    color: 'white',
-    marginBottom: 2,
-  },
-  cardText: {
-    fontSize: 16,
+    fontSize: 20,
     color: 'white',
     marginBottom: 5,
   },
   result: {
-    fontSize: 16,
-    color: '#4caf50',
+    fontSize: 20, // Aumenta el tamaño de la fuente
+    color: '#83fb24', // Cambia a un color dorado para resaltar
     marginTop: 10,
+    fontWeight: 'bold', // Negrita para mayor énfasis
+    backgroundColor: '#333', // Fondo oscuro para contraste
+    padding: 10, // Espaciado interno
+    borderRadius: 8, // Bordes redondeados
+    textAlign: 'center', // Centra el texto
   },
 });
 
-export default Vista1;
+
+export default Vista2;

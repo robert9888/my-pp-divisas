@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Clipboard, Image } from 'react-native';
-import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { View, Text, TextInput, StyleSheet, ScrollView, Button } from 'react-native';
 
 const Vista2 = ({ navigation }) => {
   const [data, setData] = useState([]);
   const [amount, setAmount] = useState(0);
-  const [showInfo, setShowInfo] = useState(false);
-  const [infoVisibility, setInfoVisibility] = useState({});
 
   useEffect(() => {
     // Realiza una solicitud a la API para obtener datos sobre el dólar
@@ -16,41 +13,24 @@ const Vista2 = ({ navigation }) => {
       .catch(error => console.error('Error al obtener los datos:', error));
   }, []);
 
-  const copyToClipboard = (text) => {
-    Clipboard.setString(text);
-  };
-
-  const calculateDifferences = (bcvValue, customAverage, result) => {
-    return {
-      diffBCVPromedio: (bcvValue - customAverage).toFixed(2),
-      diffBCVParalelo: (bcvValue - result).toFixed(2),
-    };
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Input para ingresar el monto */}
       <View style={styles.inputContainer}>
-        <View style={styles.imageWrapper}>
-          <Image
-            source={require('./assets/conversor2.png')}
-            style={styles.inputImage}
-          />
-        </View>
-        <Text style={styles.label}>Ingrese un monto:</Text>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Monto en Bolívares"
-            placeholderTextColor="#888"
-            value={amount > 0 ? amount.toString() : ''}
-            onChangeText={(value) => setAmount(parseFloat(value) || 0)}
-          />
-        </View>
+        <Text style={styles.label}>Ingrese un monto en Bolívares:</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          placeholder="Monto en Bolívares"
+          placeholderTextColor="#888"
+          onChangeText={(value) => setAmount(parseFloat(value) || 0)}
+        />
       </View>
 
+      {/* Tarjetas con los datos */}
       {data.length > 0 ? (
+           
+
         data.map((dolar, index) => {
           let prefix = '';
           if (index === 0) {
@@ -60,112 +40,24 @@ const Vista2 = ({ navigation }) => {
           } else if (index === 2) {
             prefix = 'Paralelo';
           }
-        
+
+          // Formatea la fecha para mostrar solo la parte de la fecha (YYYY-MM-DD)
+          const formattedDate = dolar.fechaActualizacion?.split('T')[0] || 'Fecha no disponible';
+
+          // Calcula el monto dividido
           let result;
           if (dolar.promedio && amount > 0) {
             result = (amount / parseFloat(dolar.promedio)).toFixed(2);
           } else {
-            result = '0.00';
+            result = 'N/A';
           }
-        
-          let displayValue = parseFloat(dolar.promedio).toFixed(2);
-        
-          // Corrige el cálculo del promedio personalizado
-          if (index === 1 && data.length > 2) {
-            const bcvValue = parseFloat(data[0].promedio);
-            const paraleloValue = parseFloat(data[2].promedio);
-            const customAverage = ((bcvValue + paraleloValue) / 2).toFixed(2);
-            displayValue = customAverage;
-            result = (amount / parseFloat(customAverage)).toFixed(2);
-          }
-
-     
 
           return (
             <View key={index} style={styles.card}>
-      <Text style={styles.cardTitle}>{prefix} - Tasa: {displayValue}</Text>
-      <View style={styles.resultWrapper}>
-        <TouchableOpacity
-          style={styles.copyButton}
-          onPress={() => {
-            setInfoVisibility((prev) => ({
-              ...prev,
-              [index]: !prev[index],
-            }));
-          }}
-        >
-          <Icon name="compare" size={20} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.result}>USD: {result}</Text>
-        <TouchableOpacity
-          style={styles.copyButton}
-          onPress={() => copyToClipboard(result)}
-        >
-          <Icon name="content-copy" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Información adicional bajo la tarjeta seleccionada */}
-      {infoVisibility[index] && (
-        <View style={styles.additionalInfo}>
-          {data.length > 2 ? (
-            <>
-              <Text style={styles.infoTitle}>Diferencia</Text>
-              {index === 0 && (
-                <>
-                  <Text style={styles.infoText}>
-                    Promedio: {(
-                      parseFloat(amount / parseFloat(data[0].promedio)) -
-                      parseFloat(amount / ((parseFloat(data[0].promedio) + parseFloat(data[2].promedio)) / 2))
-                    ).toFixed(2)}
-                  </Text>
-                  <Text style={styles.infoText}>
-                    Paralelo: {(
-                      parseFloat(amount / parseFloat(data[0].promedio)) -
-                      parseFloat(amount / parseFloat(data[2].promedio))
-                    ).toFixed(2)}
-                  </Text>
-                </>
-              )}
-              {index === 1 && (
-                <>
-                  <Text style={styles.infoText}>
-                    BCV: {(
-                      parseFloat(amount / ((parseFloat(data[0].promedio) + parseFloat(data[2].promedio)) / 2)) -
-                      parseFloat(amount / parseFloat(data[0].promedio))
-                    ).toFixed(2)}
-                  </Text>
-                  <Text style={styles.infoText}>
-                    Paralelo: {(
-                      parseFloat(amount / ((parseFloat(data[0].promedio) + parseFloat(data[2].promedio)) / 2)) -
-                      parseFloat(amount / parseFloat(data[2].promedio))
-                    ).toFixed(2)}
-                  </Text>
-                </>
-              )}
-              {index === 2 && (
-                <>
-                  <Text style={styles.infoText}>
-                    BCV: {(
-                      parseFloat(amount / parseFloat(data[2].promedio)) -
-                      parseFloat(amount / parseFloat(data[0].promedio))
-                    ).toFixed(2)}
-                  </Text>
-                  <Text style={styles.infoText}>
-                    Promedio: {(
-                      parseFloat(amount / parseFloat(data[2].promedio)) -
-                      parseFloat(amount / ((parseFloat(data[0].promedio) + parseFloat(data[2].promedio)) / 2))
-                    ).toFixed(2)}
-                  </Text>
-                </>
-              )}
-            </>
-          ) : (
-            <Text style={styles.infoText}>No hay suficientes datos para calcular diferencias.</Text>
-          )}
-        </View>
-      )}
-    </View>
+              <Text style={styles.cardTitle}>{prefix}</Text>
+              <Text style={styles.cardText}>Compra: {dolar.promedio}</Text>
+              <Text style={styles.result}>Monto en USD: {result}</Text>
+            </View>
           );
         })
       ) : (
@@ -180,8 +72,8 @@ const Vista2 = ({ navigation }) => {
       )}
 
       {/* Botón para navegar a Vista 1 */}
-      <TouchableOpacity
-        style={styles.customButton}
+      <Button
+        title="Ir a Vista 1"
         onPress={() => {
           if (navigation && navigation.navigate) {
             navigation.navigate('Vista1');
@@ -189,9 +81,7 @@ const Vista2 = ({ navigation }) => {
             console.error('El objeto navigation no está disponible.');
           }
         }}
-      >
-        <Text style={styles.customButtonText}>USD a BS</Text>
-      </TouchableOpacity>
+      />
     </ScrollView>
   );
 };
